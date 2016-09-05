@@ -1,0 +1,16 @@
+{
+	"name": "ipunkt/PROJECT",
+	"type": "project",
+	"require": {
+
+	},
+	"minimum-stability": "stable",
+	"require-dev": {
+		"ipunkt/rancherize": "*@dev"
+	},
+	"autoload": {
+		"psr-4": {
+			"App\\": "app/"
+		}
+	}
+}
