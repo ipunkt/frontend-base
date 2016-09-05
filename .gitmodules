@@ -1,0 +1,3 @@
+[submodule "scripts/rancherize"]
+	path = scripts/rancherize
+	url = https://github.com/ipunkt/rancherize.git

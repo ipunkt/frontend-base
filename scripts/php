@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# PHP 7.0.8
+
+# Rausfinden ob das Script mit einer Konsole verbunden ist um -it bei docker zu
+# setzen
+if tty 2>&1 > /dev/null ; then
+        INTERACTIVE="-it"
+else
+        INTERACTIVE=""
+        #echo "No terminal detected, running in non-interactive mode"
+fi
+
+DIR=""
+if [ "$1" = "-d" ] ; then
+	DIR="-v $(readlink -f "$2"):$(readlink -f "$2")"
+	shift
+	shift
+fi
+
+# Userid und Gruppenid um docker mit --user zu starten
+USERID=$(id -u)
+GROUPID=$(id -g)
+
+PHPHOME="${HOME}/.phphome"
+if [ ! -d "${PHPHOME}" ] ; then
+	mkdir "${PHPHOME}"
+fi
+
+docker run $INTERACTIVE --user "$USERID:$GROUPID" ${DIR} --rm -e XDEBUG_CONFIG -v "${PHPHOME}:/home" -e "HOME=/home" -v $(pwd):/var/www/laravel -w /var/www/laravel ipunktbs/php:7.0-debug php $*

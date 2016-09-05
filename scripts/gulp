@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# checks age of file
+function age() {
+   local filename=$1
+   local changed=`stat -c %Y "$filename"`
+   local now=`date +%s`
+   local elapsed
+
+   let elapsed=now-changed
+   echo $elapsed
+}
+
+IMAGE="ipunktbs/gulp-tasks"
+
+# detect interactive or non-interactive running of the script
+if tty 2>&1 > /dev/null ; then
+        INTERACTIVE="-it"
+
+        if [ $(age "$0") -gt 86400 ]; then
+            echo -e "\e[33mYour docker image is older than 1 day. Updating...\e[0m"
+            touch "$0"
+            docker pull $IMAGE
+        fi
+else
+        INTERACTIVE=""
+        echo "No terminal detected, running in non-interactive mode"
+fi
+
+ENVIRONMENT=staging
+while [ "$1" = "--env" ] ; do
+	ENVIRONMENT=$2
+	shift
+	shift
+done
+
+USERID=$(id -u)
+GROUPID=$(id -g)
+# internal mountpoint. DO NOT CHANGE!
+WORKDIR="/home/gulp/project"
+RUNCOMMAND="docker"
+RUNPARAMETERS=("run" $INTERACTIVE "--rm" -e "NODE_ENV=$ENVIRONMENT" "--user" "$USERID:$GROUPID" -v "$(pwd):$WORKDIR" "$IMAGE" )
+
+function help {
+
+	echo "==== frontend build helper ===="
+
+	case $COMMAND in
+		run)
+			echo "$0 run command"
+			echo ""
+			echo "Startet command im Projektverzeichnis innerhalb des Containers"
+			exit
+			;;
+	esac
+
+
+	echo "$0 [--env UMGEBUNG] [COMMAND]"
+	echo ""
+	echo "Optionen"
+	echo ""
+	echo "== --env UMGEBUNG =="
+	echo "Die Angegebene Umgebung wird in der Variable NODE_ENV an die Buildumgebung weitergegeben"
+	echo ""
+	echo "Commands"
+	echo ""
+	echo "== build =="
+	echo "Startet gulp build im Projektverzeichnis im Container"
+	echo ""
+	echo "== build:dev =="
+	echo "Startet gulp build:dev im Projektverzeichnis im Container"
+	echo ""
+	echo "== watch =="
+	echo "Startet gulp watch im Projektverzeichnis im Container"
+	echo ""
+	echo ""
+	echo "== update =="
+	echo "Holt die neuste Version des Docker Images von Dockerhub"
+	echo ""
+	echo ""
+	return
+}
+
+COMMAND=$1
+
+case $COMMAND in
+	update)
+		docker pull $IMAGE
+		;;
+	run)
+		if [ "$#" -lt 2 ] ; then
+			help $COMMAND
+			exit 1
+		fi
+		shift
+		$RUNCOMMAND "${RUNPARAMETERS[@]}" $@
+		;;
+	*)
+		if [ "$#" -lt 1 ] ; then
+			help
+			exit 1
+		fi
+		$RUNCOMMAND "${RUNPARAMETERS[@]}" npm run $@
+		;;
+esac
